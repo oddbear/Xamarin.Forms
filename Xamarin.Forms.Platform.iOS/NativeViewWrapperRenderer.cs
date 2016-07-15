@@ -74,5 +74,25 @@ namespace Xamarin.Forms.Platform.iOS
 		/// The native control we're wrapping isn't ours to dispose of
 		/// </summary>
 		protected override bool ManageNativeControlLifetime => false;
+
+		protected override void Dispose(bool disposing)
+		{
+			if (disposing)
+			{
+				ClearNativeBindings();
+			}
+			base.Dispose(disposing);
+		}
+
+		void ClearNativeBindings()
+		{
+			var bindableNativeView = Element as INativeViewBindableController;
+			if (bindableNativeView != null)
+			{
+				bindableNativeView.UnApplyNativeBindings();
+				if (NativeBindingExtensions.NativeBindingPool.ContainsKey(Element.NativeView))
+					NativeBindingExtensions.NativeBindingPool.Remove(Element.NativeView);
+			}
+		}
 	}
 }

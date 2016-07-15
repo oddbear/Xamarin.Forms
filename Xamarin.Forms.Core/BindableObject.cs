@@ -153,6 +153,8 @@ namespace Xamarin.Forms
 
 				context.Binding.Unapply();
 			}
+
+			(this as INativeViewBindableController)?.UnApplyNativeBindings();
 		}
 
 		internal bool GetIsBound(BindableProperty targetProperty)

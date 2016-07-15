@@ -40,7 +40,9 @@ namespace Xamarin.Forms.Platform.iOS
 
 	public class NativeViewWrapper : View, INativeViewBindableController
 	{
-		NativeViewPropertyListener listener;
+		NativeViewPropertyListener propertyListener;
+		NativeViewEventListener eventListener;
+
 		public NativeViewWrapper(UIView nativeView, GetDesiredSizeDelegate getDesiredSizeDelegate = null, SizeThatFitsDelegate sizeThatFitsDelegate = null, LayoutSubviewsDelegate layoutSubViews = null)
 		{
 			GetDesiredSizeDelegate = getDesiredSizeDelegate;
@@ -56,6 +58,23 @@ namespace Xamarin.Forms.Platform.iOS
 		public UIView NativeView { get; }
 
 		public SizeThatFitsDelegate SizeThatFitsDelegate { get; set; }
+
+		void INativeViewBindableController.UnApplyNativeBindings()
+		{
+			foreach (var item in bindableProxies)
+			{
+				item.Value.Unapply();
+				item.Key.RemoveBinding(item.Key.Property);
+				item.Key.BindingContext = null;
+
+				if (item.Value.Mode == BindingMode.TwoWay)
+				{
+					UnSubscribeTwoWay(item);
+				}
+			}
+
+			bindableProxies = null;
+		}
 
 		void INativeViewBindableController.ApplyNativeBindings()
 		{
@@ -87,19 +106,39 @@ namespace Xamarin.Forms.Platform.iOS
 
 		void SubscribeTwoWay(KeyValuePair<BindableProxy, Binding> item)
 		{
-			if (listener == null)
-				listener = new NativeViewPropertyListener(this);
+			if (propertyListener == null)
+				propertyListener = new NativeViewPropertyListener(this);
 
-			NativeView.AddObserver(listener, new NSString(item.Key.TargetPropertyName), 0, IntPtr.Zero);
+			NativeView.AddObserver(propertyListener, new NSString(item.Key.TargetPropertyName), 0, IntPtr.Zero);
 
 			if (!string.IsNullOrEmpty(item.Key.TargetEventName))
 			{
-				var propertyListener = new NativeViewEventListener(NativeView, item.Key.TargetEventName, item.Key.TargetPropertyName);
-				propertyListener.NativeViewEventFired += (object sender, NativeViewEventFiredEventArgs e) =>
-				{
-					(this as INativeViewBindableController).OnNativePropertyChange(e.PropertyName, null);
-				};
+				eventListener = new NativeViewEventListener(NativeView, item.Key.TargetEventName, item.Key.TargetPropertyName);
+				eventListener.NativeViewEventFired += NativeViewEventFired;
 			}
+		}
+
+		void UnSubscribeTwoWay(KeyValuePair<BindableProxy, Binding> item)
+		{
+			if (propertyListener != null)
+			{
+				NativeView.RemoveObserver(propertyListener, new NSString(item.Key.TargetPropertyName), IntPtr.Zero);
+				propertyListener.Dispose();
+			}
+
+			if (eventListener != null)
+			{
+				eventListener.NativeViewEventFired -= NativeViewEventFired;
+				eventListener.Dispose();
+			}
+
+			propertyListener = null;
+			eventListener = null;
+		}
+
+		void NativeViewEventFired(object sender, NativeViewEventFiredEventArgs e)
+		{
+			(this as INativeViewBindableController).OnNativePropertyChange(e.PropertyName, null);
 		}
 
 		Dictionary<BindableProxy, Binding> bindableProxies = new Dictionary<BindableProxy, Binding>();

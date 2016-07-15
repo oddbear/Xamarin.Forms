@@ -5,6 +5,7 @@ namespace Xamarin.Forms
 	{
 		void ApplyNativeBindings();
 		void OnNativePropertyChange(string property, object newValue = null);
+		void UnApplyNativeBindings();
 	}
 }
 

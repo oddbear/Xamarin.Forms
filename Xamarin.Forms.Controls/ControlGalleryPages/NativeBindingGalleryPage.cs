@@ -24,6 +24,12 @@ namespace Xamarin.Forms.Controls
 
 			Layout = new StackLayout { Padding = 20, VerticalOptions = LayoutOptions.FillAndExpand };
 
+			var buttonNav = new Button { Text = "New Page" };
+			buttonNav.Clicked += (object sender, EventArgs e) =>
+			{
+				App.Current.MainPage = new ContentPage { Content = new Label { Text = "New page" } };
+			};
+
 			var button = new Button { Text = "Change BindingContext " };
 			button.Clicked += (object sender, EventArgs e) =>
 			{
@@ -41,6 +47,8 @@ namespace Xamarin.Forms.Controls
 
 			var label = new Label();
 			label.SetBinding(Label.TextProperty, "FormsLabel");
+
+			Layout.Children.Add(buttonNav);
 
 			Layout.Children.Add(label);
 
