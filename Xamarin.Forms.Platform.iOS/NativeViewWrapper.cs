@@ -3,17 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Xamarin.Forms.Internals;
 
 #if __UNIFIED__
 using CoreGraphics;
 using Foundation;
 using UIKit;
-using Xamarin.Forms.Internals;
 
 #else
 using MonoTouch.UIKit;
 using MonoTouch.Foundation;
 using MonoTouch.CoreGraphics;
+
 #endif
 
 #if !__UNIFIED__

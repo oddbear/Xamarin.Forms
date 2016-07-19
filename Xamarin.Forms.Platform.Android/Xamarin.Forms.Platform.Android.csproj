@@ -128,7 +128,6 @@
     <Compile Include="Cells\SwitchCellRenderer.cs" />
     <Compile Include="Cells\TextCellRenderer.cs" />
     <Compile Include="Cells\ViewCellRenderer.cs" />
-    <Compile Include="ColorExtensions.cs" />
     <Compile Include="ContextExtensions.cs" />
     <Compile Include="GetDesiredSizeDelegate.cs" />
     <Compile Include="IDeviceInfoProvider.cs" />
@@ -234,11 +233,14 @@
     <Compile Include="Renderers\PickerRenderer.cs" />
     <Compile Include="KeyboardManager.cs" />
     <Compile Include="ResourcesProvider.cs" />
-    <Compile Include="Extensions.cs" />
     <Compile Include="Renderers\OpenGLViewRenderer.cs" />
     <Compile Include="AppCompat\CarouselPageRenderer.cs" />
     <Compile Include="AppCompat\FormsFragmentPagerAdapter.cs" />
     <Compile Include="AndroidAppIndexProvider.cs" />
+    <Compile Include="Extensions\NativeBindingExtensions.cs" />
+    <Compile Include="Extensions\ColorConverter.cs" />
+    <Compile Include="Extensions\ColorExtensions.cs" />
+    <Compile Include="Extensions\Extensions.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -260,6 +262,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Extensions\" />
   </ItemGroup>
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <Import Project="..\packages\Xamarin.Android.Support.Vector.Drawable.23.3.0\build\Xamarin.Android.Support.Vector.Drawable.targets" Condition="Exists('..\packages\Xamarin.Android.Support.Vector.Drawable.23.3.0\build\Xamarin.Android.Support.Vector.Drawable.targets')" />

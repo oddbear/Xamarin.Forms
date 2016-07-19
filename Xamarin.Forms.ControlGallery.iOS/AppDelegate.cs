@@ -213,8 +213,28 @@ namespace Xamarin.Forms.ControlGallery.iOS
 				Font = UIFont.FromName("Helvetica", 24f)
 			};
 
+			var uibuttonColor = new UIButton(UIButtonType.RoundedRect);
+			uibuttonColor.SetTitle("Toggle Text Color Binding", UIControlState.Normal);
+			uibuttonColor.Font = UIFont.FromName("Helvetica", 14f);
+			uibuttonColor.TouchUpInside += (sender, args) =>
+			{
+				uilabel.TextColor = UIColor.Blue;
+			};
+
 
 			uilabel.SetBinding("Text", new Binding("NativeLabel"));
+			uilabel.SetBinding(() => uilabel.TextColor, new Binding("NativeLabelColor"));
+
+			sl?.Children.Add(uilabel);
+			sl?.Children.Add(uibuttonColor.ToView());
+#if !_CLASSIC_
+			var colorPicker = new ColorPickerView(new CGRect(0, 0, 300, 300));
+
+			colorPicker.SetBinding(() => colorPicker.SelectedColor, new Binding("NativeLabelColor", BindingMode.TwoWay), "ColorPicked");
+
+
+			sl?.Children.Add(colorPicker);
+#endif
 
 			//this doesn't work with the linker on because there's no getter for TextColor
 			//uilabel.SetBinding("TextColor", new Binding("NativeLabelColor", BindingMode.TwoWay));
@@ -227,31 +247,7 @@ namespace Xamarin.Forms.ControlGallery.iOS
 			//	() => uilabel.TextColor
 			//);
 
-			uilabel.SetBinding(() => uilabel.TextColor, new Binding("NativeLabelColor"));
-			sl?.Children.Add(uilabel);
 
-			var uibuttonColor = new UIButton(UIButtonType.RoundedRect);
-			uibuttonColor.SetTitle("Toggle Text Color Binding", UIControlState.Normal);
-			uibuttonColor.Font = UIFont.FromName("Helvetica", 14f);
-			uibuttonColor.TouchUpInside += (sender, args) =>
-			{
-				uilabel.TextColor = UIColor.Blue;
-			};
-
-			sl?.Children.Add(uibuttonColor.ToView());
-#if !_CLASSIC_
-			var colorPicker = new ColorPickerView(new CGRect(0, 0, 300, 300));
-
-			colorPicker.SetBinding(() => colorPicker.SelectedColor, new Binding("NativeLabelColor", BindingMode.TwoWay), "ColorPicked");
-			colorPicker.ColorPicked += (sender, e) =>
-			{
-				var color = e.SelectedColor;
-
-				// use selected color
-			};
-
-			sl?.Children.Add(colorPicker);
-#endif
 
 			page.NativeControlsAdded = true;
 		}
