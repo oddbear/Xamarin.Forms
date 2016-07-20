@@ -35,7 +35,7 @@ namespace Xamarin.Forms.Core.UnitTests
 			var x = new MasterDetailPage();
 			x.On<AndroidPlatform>().SetSomeAndroidThing(42);
 
-			Assert.IsTrue(x.On<AndroidPlatform>().GetSomeAndroidThing() == 42);
+			Assert.IsTrue(x.On<AndroidPlatform>().GetValueSomeAndroidThing() == 42);
 		}
 
 		[Test]
@@ -45,12 +45,12 @@ namespace Xamarin.Forms.Core.UnitTests
 
 			x.On<AndroidPlatform>().UseTabletDefaults();
 
-			Assert.IsTrue(x.On<AndroidPlatform>().GetSomeAndroidThing() == 10);
+			Assert.IsTrue(x.On<AndroidPlatform>().GetValueSomeAndroidThing() == 10);
 			Assert.IsTrue(x.On<AndroidPlatform>().GetSomeOtherAndroidThing() == 45);
 
 			x.On<AndroidPlatform>().UsePhabletDefaults();
 			
-			Assert.IsTrue(x.On<AndroidPlatform>().GetSomeAndroidThing() == 8);
+			Assert.IsTrue(x.On<AndroidPlatform>().GetValueSomeAndroidThing() == 8);
 			Assert.IsTrue(x.On<AndroidPlatform>().GetSomeOtherAndroidThing() == 40);
 		}
 

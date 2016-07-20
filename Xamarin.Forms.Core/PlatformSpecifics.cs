@@ -107,7 +107,7 @@ namespace Xamarin.Forms.PlatformConfiguration.Android
 			element.SetValue(SomeOtherAndroidThingProperty, value);
 		}
 
-		public static int GetSomeAndroidThing(this IPlatformElementConfiguration<AndroidPlatform, FormsElement> config)
+		public static int GetValueSomeAndroidThing(this IPlatformElementConfiguration<AndroidPlatform, FormsElement> config)
 		{
 			return (int)config.Element.GetValue(SomeAndroidThingProperty);
 		}
