@@ -38,7 +38,8 @@ namespace Xamarin.Forms.Xaml
 	{
 		public static void ParseXaml(RootNode rootNode, XmlReader reader)
 		{
-			var attributes = ParseXamlAttributes(reader);
+			IList<KeyValuePair<string, string>> xmlns;
+			var attributes = ParseXamlAttributes(reader, out xmlns);
 			rootNode.Properties.AddRange(attributes);
 			ParseXamlElementFor(rootNode, reader);
 		}
@@ -136,8 +137,9 @@ namespace Xamarin.Forms.Xaml
 						var elementName = reader.Name;
 						var elementNsUri = reader.NamespaceURI;
 						var elementXmlInfo = (IXmlLineInfo)reader;
+						IList<KeyValuePair<string, string>> xmlns;
 
-						var attributes = ParseXamlAttributes(reader);
+						var attributes = ParseXamlAttributes(reader, out xmlns);
 
 						IList<XmlType> typeArguments = null;
 						if (attributes.Any(kvp => kvp.Key == XmlName.xTypeArguments))
@@ -170,17 +172,20 @@ namespace Xamarin.Forms.Xaml
 			throw new XamlParseException("Closing PropertyElement expected", (IXmlLineInfo)reader);
 		}
 
-		static IList<KeyValuePair<XmlName, INode>> ParseXamlAttributes(XmlReader reader)
+		static IList<KeyValuePair<XmlName, INode>> ParseXamlAttributes(XmlReader reader, out IList<KeyValuePair<string,string>> xmlns)
 		{
 			Debug.Assert(reader.NodeType == XmlNodeType.Element);
 			var attributes = new List<KeyValuePair<XmlName, INode>>();
+			xmlns = new List<KeyValuePair<string, string>>();
 			for (var i = 0; i < reader.AttributeCount; i++)
 			{
 				reader.MoveToAttribute(i);
 
 				//skip xmlns
-				if (reader.NamespaceURI == "http://www.w3.org/2000/xmlns/")
+				if (reader.NamespaceURI == "http://www.w3.org/2000/xmlns/") {
+					xmlns.Add(new KeyValuePair<string, string>(reader.LocalName, reader.Value));
 					continue;
+				}
 
 				var propertyName = new XmlName(reader.NamespaceURI, reader.LocalName);
 
@@ -281,9 +286,10 @@ namespace Xamarin.Forms.Xaml
 				string ns;
 				string typename;
 				string asmstring;
+				string target;
 				Assembly asm;
 
-				XmlnsHelper.ParseXmlns(namespaceURI, out typename, out ns, out asmstring);
+				XmlnsHelper.ParseXmlns(namespaceURI, out typename, out ns, out asmstring, out target);
 				asm = asmstring == null ? currentAssembly : Assembly.Load(new AssemblyName(asmstring));
 				lookupAssemblies.Add(new Tuple<string, Assembly>(ns, asm));
 			}
