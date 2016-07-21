@@ -127,7 +127,7 @@ namespace Xamarin.Forms
 				valueFromNative = nativeValue;
 
 
-			if (valueFromNative == currentValue)
+			if (valueFromNative.Equals(currentValue))
 				return;
 
 			SetValueCore(Property, valueFromNative);

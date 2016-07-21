@@ -39,7 +39,7 @@ namespace Xamarin.Forms.Platform.Android
 
 		public static Color ToColor(this AColor color)
 		{
-			return new Color(color.R, color.G, color.B, color.A);
+			return Color.FromUint((uint)color.ToArgb());
 		}
 	}
 }

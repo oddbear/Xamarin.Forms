@@ -1,11 +1,27 @@
 using System.Collections.Generic;
+using Java.Beans;
+using Java.Lang;
 using Xamarin.Forms.Internals;
 
 namespace Xamarin.Forms.Platform.Android
 {
+	class NativeViewPropertyListener : Object, IPropertyChangeListener
+	{
+		readonly INativeViewBindableController nativeBindableController;
+
+		public NativeViewPropertyListener(INativeViewBindableController nativeViewBindableController)
+		{
+			nativeBindableController = nativeViewBindableController;
+		}
+
+		public void PropertyChange(PropertyChangeEvent e)
+		{
+			nativeBindableController.OnNativePropertyChange(e.PropertyName);
+		}
+	}
+
 	public class NativeViewWrapper : View, INativeViewBindableController
 	{
-
 		public NativeViewWrapper(global::Android.Views.View nativeView, GetDesiredSizeDelegate getDesiredSizeDelegate = null, OnLayoutDelegate onLayoutDelegate = null,
 								 OnMeasureDelegate onMeasureDelegate = null)
 		{
@@ -13,6 +29,8 @@ namespace Xamarin.Forms.Platform.Android
 			NativeView = nativeView;
 			OnLayoutDelegate = onLayoutDelegate;
 			OnMeasureDelegate = onMeasureDelegate;
+			changes = new PropertyChangeSupport(NativeView);
+			bindableProxies = new Dictionary<BindableProxy, Binding>();
 		}
 
 		public GetDesiredSizeDelegate GetDesiredSizeDelegate { get; }
@@ -22,7 +40,6 @@ namespace Xamarin.Forms.Platform.Android
 		public OnLayoutDelegate OnLayoutDelegate { get; }
 
 		public OnMeasureDelegate OnMeasureDelegate { get; }
-
 
 		void INativeViewBindableController.UnApplyNativeBindings()
 		{
@@ -69,12 +86,19 @@ namespace Xamarin.Forms.Platform.Android
 			}
 		}
 
+		NativeViewEventListener eventListener;
+		IPropertyChangeListener propertyListener;
+		readonly PropertyChangeSupport changes;
+		Dictionary<BindableProxy, Binding> bindableProxies;
+
 		void SubscribeTwoWay(KeyValuePair<BindableProxy, Binding> item)
 		{
-			//if (propertyListener == null)
-			//	propertyListener = new NativeViewPropertyListener(this);
+			if (propertyListener == null)
+			{
+				propertyListener = new NativeViewPropertyListener(this);
+			}
 
-			//NativeView.AddObserver(propertyListener, new NSString(item.Key.TargetPropertyName), 0, IntPtr.Zero);
+			changes.AddPropertyChangeListener(item.Key.TargetPropertyName, propertyListener);
 
 			if (!string.IsNullOrEmpty(item.Key.TargetEventName))
 			{
@@ -85,11 +109,11 @@ namespace Xamarin.Forms.Platform.Android
 
 		void UnSubscribeTwoWay(KeyValuePair<BindableProxy, Binding> item)
 		{
-			//if (propertyListener != null)
-			//{
-			//	NativeView.RemoveObserver(propertyListener, new NSString(item.Key.TargetPropertyName), IntPtr.Zero);
-			//	propertyListener.Dispose();
-			//}
+			if (propertyListener != null)
+			{
+				changes.RemovePropertyChangeListener(item.Key.TargetPropertyName, propertyListener);
+				propertyListener.Dispose();
+			}
 
 			if (eventListener != null)
 			{
@@ -97,7 +121,7 @@ namespace Xamarin.Forms.Platform.Android
 				eventListener.Dispose();
 			}
 
-			//propertyListener = null;
+			propertyListener = null;
 			eventListener = null;
 		}
 
@@ -105,9 +129,5 @@ namespace Xamarin.Forms.Platform.Android
 		{
 			(this as INativeViewBindableController).OnNativePropertyChange(e.PropertyName, null);
 		}
-
-		Dictionary<BindableProxy, Binding> bindableProxies = new Dictionary<BindableProxy, Binding>();
-
-		NativeViewEventListener eventListener;
 	}
 }

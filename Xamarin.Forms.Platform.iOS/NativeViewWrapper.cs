@@ -50,6 +50,7 @@ namespace Xamarin.Forms.Platform.iOS
 			SizeThatFitsDelegate = sizeThatFitsDelegate;
 			LayoutSubViews = layoutSubViews;
 			NativeView = nativeView;
+			bindableProxies = new Dictionary<BindableProxy, Binding>()
 		}
 
 		public GetDesiredSizeDelegate GetDesiredSizeDelegate { get; }
@@ -105,6 +106,8 @@ namespace Xamarin.Forms.Platform.iOS
 			}
 		}
 
+		Dictionary<BindableProxy, Binding> bindableProxies;
+
 		void SubscribeTwoWay(KeyValuePair<BindableProxy, Binding> item)
 		{
 			if (propertyListener == null)
@@ -141,8 +144,5 @@ namespace Xamarin.Forms.Platform.iOS
 		{
 			(this as INativeViewBindableController).OnNativePropertyChange(e.PropertyName, null);
 		}
-
-		Dictionary<BindableProxy, Binding> bindableProxies = new Dictionary<BindableProxy, Binding>();
-
 	}
 }

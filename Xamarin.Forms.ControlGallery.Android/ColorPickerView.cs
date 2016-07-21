@@ -1,5 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Threading.Tasks;
+using Android.Animation;
 using Android.Content;
 using Android.Views;
 using Android.Widget;
@@ -8,8 +10,7 @@ using Droid = Android;
 
 namespace Xamarin.Forms.ControlGallery.Android
 {
-
-	public class ColorPickerView : ImageView, INotifyPropertyChanged, Droid.Views.View.IOnTouchListener
+	public class ColorPickerView : ViewGroup, INotifyPropertyChanged
 	{
 		static readonly int[] COLORS = new[] {
 				new Droid.Graphics.Color(255,0,0,255).ToArgb(), new Droid.Graphics.Color(255,0,255,255).ToArgb(), new Droid.Graphics.Color(0,0,255,255).ToArgb(),
@@ -23,18 +24,45 @@ namespace Xamarin.Forms.ControlGallery.Android
 		public ColorPickerView(Context context, int minWidth, int minHeight) : base(context)
 		{
 			SelectedColor = Color.Black.ToAndroid();
+
 			SetMinimumHeight(minHeight);
 			SetMinimumWidth(minWidth);
-			colorPointerPaint = new Droid.Graphics.Paint();
-			colorPointerPaint.SetStyle(Droid.Graphics.Paint.Style.Stroke);
-			colorPointerPaint.StrokeWidth = 5f;
-			colorPointerPaint.SetARGB(255, 0, 0, 0);
 
-			colorPreviewPaint = new Droid.Graphics.Paint();
-			colorPreviewPaint.SetStyle(Droid.Graphics.Paint.Style.Fill);
-			colorPreviewPaint.SetARGB(0, 0, 0, 0);
-			DrawingCacheEnabled = true;
-			this.SetOnTouchListener(this);
+			imageViewPallete = new ImageView(context);
+			imageViewPallete.DrawingCacheEnabled = true;
+			imageViewPallete.Background = new Droid.Graphics.Drawables.GradientDrawable(Droid.Graphics.Drawables.GradientDrawable.Orientation.LeftRight, COLORS);
+
+			imageViewPallete.Touch += (object sender, TouchEventArgs e) =>
+			{
+				if (e.Event.Action == MotionEventActions.Down || e.Event.Action == MotionEventActions.Move)
+				{
+					currentPoint = new Droid.Graphics.Point((int)e.Event.GetX(), (int)e.Event.GetY());
+					previewColor = GetCurrentColor((int)e.Event.GetX(), (int)e.Event.GetY());
+				}
+				if (e.Event.Action == MotionEventActions.Up)
+				{
+					SelectedColor = previewColor;
+				}
+			};
+
+			imageViewSelectedColor = new ImageView(context);
+			colorPointer = new ColorPointer(context);
+
+			AddView(imageViewPallete);
+			AddView(imageViewSelectedColor);
+			AddView(colorPointer);
+		}
+
+		protected override void OnLayout(bool changed, int left, int top, int right, int bottom)
+		{
+			var half = (bottom - top) / 2;
+			var margin = 20;
+
+			var palleteY = top + half;
+
+			imageViewSelectedColor.Layout(left, top, right, bottom - half - margin);
+			imageViewPallete.Layout(left, palleteY, right, bottom);
+			colorPointer.Layout(left, palleteY, right, bottom);
 		}
 
 		public Droid.Graphics.Color SelectedColor
@@ -48,94 +76,148 @@ namespace Xamarin.Forms.ControlGallery.Android
 			{
 				if (selectedColor == value)
 					return;
+
 				selectedColor = value;
+				UpdateUi();
 				OnPropertyChanged();
 				OnColorPicked();
 			}
 		}
 
-		protected override void DispatchDraw(global::Android.Graphics.Canvas canvas)
-		{
-
-			var _paint = new Droid.Graphics.Paint();
-
-			using (Droid.Graphics.Shader s = new Droid.Graphics.LinearGradient(0, 0, Width, Height, COLORS, null, Droid.Graphics.Shader.TileMode.Mirror))
-			{
-				_paint = new Droid.Graphics.Paint(Droid.Graphics.PaintFlags.AntiAlias);
-				_paint.SetShader(s);
-				_paint.SetStyle(Droid.Graphics.Paint.Style.FillAndStroke);
-			}
-			canvas.DrawPaint(_paint);
-
-			BuildDrawingCache();
-
-			if (currentTouch != null)
-			{
-				colorPreviewPaint.Color = previewColor;
-
-				canvas.DrawOval(new Droid.Graphics.RectF(currentTouch.X - ovalWidth, currentTouch.Y - ovalWidth, currentTouch.X + ovalWidth, currentTouch.Y + ovalWidth), colorPointerPaint);
-
-				canvas.DrawOval(new Droid.Graphics.RectF(currentTouch.X - ovalColorPreviewWidth, currentTouch.Y - ovalColorPreviewWidth, currentTouch.X + ovalColorPreviewWidth, currentTouch.Y + ovalColorPreviewWidth), colorPreviewPaint);
-
-			}
-			_paint.Dispose();
-			base.DispatchDraw(canvas);
-		}
-
-		bool IOnTouchListener.OnTouch(Droid.Views.View v, MotionEvent e)
-		{
-			System.Diagnostics.Debug.WriteLine(e.Action);
-			if (e.Action == MotionEventActions.Down || e.Action == MotionEventActions.Move)
-			{
-				GetCurrentColor((int)e.GetX(), (int)e.GetY());
-			}
-			if (e.Action == MotionEventActions.Up)
-			{
-				SelectedColor = previewColor;
-			}
-			return true;
-		}
-
-		float ovalWidth = 20;
-		float ovalColorPreviewWidth = 10;
-		Droid.Graphics.Paint colorPointerPaint;
-		Droid.Graphics.Paint colorPreviewPaint;
+		Droid.Graphics.Point currentPoint;
+		ColorPointer colorPointer;
+		ImageView imageViewSelectedColor;
+		ImageView imageViewPallete;
 		Droid.Graphics.Color selectedColor;
 		Droid.Graphics.Color previewColor { get; set; }
-		Droid.Graphics.PointF currentTouch;
+		Droid.Graphics.Bitmap backgroundBitmap;
 
-		void GetCurrentColor(int x, int y)
+		void UpdateUi()
 		{
-			currentTouch = new Droid.Graphics.PointF(x, y);
+			imageViewSelectedColor?.SetBackgroundColor(selectedColor);
+			colorPointer?.UpdatePoint(currentPoint);
+		}
 
-			Droid.Graphics.Bitmap bmp = GetDrawingCache(true);
+		Droid.Graphics.Color GetCurrentColor(int x, int y)
+		{
+			if (backgroundBitmap == null)
+				backgroundBitmap = imageViewPallete.GetDrawingCache(false);
+
 			if (x < 0)
 				x = 0;
 			if (y < 0)
 				y = 0;
-			if (x >= bmp.Width)
-				x = bmp.Width - 1;
-			if (y >= bmp.Height)
-				y = bmp.Height - 1;
+			if (x >= backgroundBitmap.Width)
+				x = backgroundBitmap.Width - 1;
+			if (y >= backgroundBitmap.Height)
+				y = backgroundBitmap.Height - 1;
 
-			int color = bmp.GetPixel(x, y);
-			previewColor = new Droid.Graphics.Color(color);
-
-			Invalidate();
+			int color = backgroundBitmap.GetPixel(x, y);
+			return new Droid.Graphics.Color(color);
 		}
 
 		void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
 		{
-			var handler = PropertyChanged;
-			if (handler != null)
-				handler(this, new PropertyChangedEventArgs(propertyName));
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 		}
 
 		void OnColorPicked()
 		{
-			var handler = ColorPicked;
-			if (handler != null)
-				handler(this, new EventArgs());
+			ColorPicked?.Invoke(this, new EventArgs());
+		}
+	}
+
+	public class ColorPointer : Droid.Views.View
+	{
+		Droid.Graphics.Paint colorPointerPaint;
+		int ovalWidth = 10;
+		Droid.Graphics.Point currentPoint;
+		Droid.Graphics.Point nextPoint;
+
+		public ColorPointer(Context context) : base(context)
+		{
+
+			colorPointerPaint = new Droid.Graphics.Paint();
+			colorPointerPaint.SetStyle(Droid.Graphics.Paint.Style.Stroke);
+			colorPointerPaint.StrokeWidth = 5f;
+			colorPointerPaint.SetARGB(255, 0, 0, 0);
+			UpdatePoint(new Droid.Graphics.Point(50, 50));
+		}
+
+		public void UpdatePoint(Droid.Graphics.Point p)
+		{
+			if (p == null)
+				return;
+
+			if (currentPoint == null)
+				currentPoint = nextPoint;
+
+			nextPoint = p;
+			System.Diagnostics.Debug.WriteLine($"Set nextPoint - {p}");
+
+			//left = currentPoint.X - ovalWidth;
+			//top = currentPoint.Y - ovalWidth;
+			//right = left + ovalWidth;
+			//bottom = top + ovalWidth;
+
+			//	Invalidate();
+			//	ObjectAnimator.OfObject(marker, "position", evaluator, startLatLng, finalLatLng)
+			//.SetDuration(1000)
+			//.SetInterpolator(new Android.Views.Animations.BounceInterpolator())
+			//.Start();
+		}
+
+		int left;
+		//	float right;
+		int top;
+		//	float bottom;
+
+		protected override void OnDraw(Droid.Graphics.Canvas canvas)
+		{
+
+			base.OnDraw(canvas);
+			canvas.DrawOval(new Droid.Graphics.RectF(left, left + ovalWidth, top, top + ovalWidth), colorPointerPaint);
+			//AnimatePoint();
+
+		}
+
+		void AnimatePoint()
+		{
+			if (nextPoint == null)
+				return;
+
+			var finalLeft = nextPoint.X - ovalWidth;
+			var finalTop = nextPoint.Y - ovalWidth;
+			//	var factor = 20;
+
+			System.Diagnostics.Debug.WriteLine($"final x,y - {finalLeft} : {finalTop}");
+			if (left < finalLeft)
+			{
+				left++;
+			}
+			else if (left > finalLeft)
+			{
+				left--;
+			}
+
+			if (top < finalTop)
+			{
+				top++;
+			}
+			else if (top > finalTop)
+			{
+				top--;
+			}
+			Task.Delay(200).Wait();
+			System.Diagnostics.Debug.WriteLine($"x,y - {left} : {top}");
+			if ((int)left == finalLeft && (int)top == finalTop)
+			{
+				currentPoint = nextPoint;
+				nextPoint = null;
+				return;
+			}
+
+			Invalidate();
 		}
 	}
 }
